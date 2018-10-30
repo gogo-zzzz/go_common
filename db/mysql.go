@@ -1,19 +1,19 @@
-//  gowinder@hotmail.com 2017/7/5 9:27
 package db
 
 import (
- 	"database/sql"
- _ "github.com/go-sql-driver/mysql"
+	"database/sql"
 	"fmt"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-type MysqlClient struct{
-	Client	*sql.DB
-	Addr	string
-	Port	int
-	User	string
-	Pwd		string
-	Db		string
+type MysqlClient struct {
+	Client *sql.DB
+	Addr   string
+	Port   int
+	User   string
+	Pwd    string
+	Db     string
 }
 
 func (self *MysqlClient) Init(ping bool) error {
@@ -22,16 +22,16 @@ func (self *MysqlClient) Init(ping bool) error {
 	return self.InitByString(con, ping)
 }
 
-func (self *MysqlClient) InitByString(con string, ping bool) error{
+func (self *MysqlClient) InitByString(con string, ping bool) error {
 	var err error
 	self.Client, err = sql.Open("mysql", con)
-	if err != nil{
+	if err != nil {
 		fmt.Println("MysqlClient.Init open db failed:", err)
 		return err
 	}
 
 	err = self.Client.Ping()
-	if err != nil{
+	if err != nil {
 		fmt.Println("MysqlClient.Init ping db failed:", err)
 		return err
 	}
@@ -41,18 +41,18 @@ func (self *MysqlClient) InitByString(con string, ping bool) error{
 	return err
 }
 
-func (self *MysqlClient) Close(){
+func (self *MysqlClient) Close() {
 	self.Client.Close()
 	fmt.Println("MysqlClient closed")
 }
 
 /**
 检查表是否存在，不存在就建表
- */
-func (self *MysqlClient) CheckToCreateTable(tableName string, createSql string) error{
+*/
+func (self *MysqlClient) CheckToCreateTable(tableName string, createSql string) error {
 	sql := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
 	rows, err := self.Client.Query(sql)
-	if err != nil{
+	if err != nil {
 		println("checkToCreateMysqlTable check table ", sql, "faield:", err)
 		return err
 	}
@@ -63,7 +63,7 @@ func (self *MysqlClient) CheckToCreateTable(tableName string, createSql string) 
 	rows.Close()
 	if err != nil {
 		_, err := self.Client.Exec(createSql)
-		if err != nil{
+		if err != nil {
 			println("checkToCreateMysqlTable create table ", createSql, "faield:", err)
 			return err
 		}

@@ -1,10 +1,10 @@
-//  gowinder@hotmail.com 2017/7/5 9:22
 package main
 
 import (
 	"fmt"
-	"github.com/go-redis/redis"
 	"go_common/db"
+
+	"github.com/go-redis/redis"
 )
 
 var redisAddr string = "127.0.0.1:6379"
@@ -13,16 +13,14 @@ var redisDb int = 0
 
 var mysqlAddr string = "127.0.0.1"
 var mysqlUser string = "root"
-var mysqlPwd	string = "asdf"
-var mysqlPort	int = 3306
+var mysqlPwd string = "asdf"
+var mysqlPort int = 3306
 var mysqlDb string = "test"
-
 
 const VERSION string = "0.2.3"
 
 func main() {
 	fmt.Println("start svpn cache gate  version ", VERSION)
-
 
 	//testRedis()
 	//
@@ -31,8 +29,6 @@ func main() {
 	//	fmt.Println("GlobalRedisClientPool.Init error ", err)
 	//	return
 	//}
-
-
 
 	testMongoString()
 	testRedisString()
@@ -43,7 +39,6 @@ func main() {
 		fmt.Println("GlobalRedisClientPool.Init error ", err)
 		return
 	}
-
 
 }
 func testMongoString() {
@@ -107,9 +102,9 @@ func testRedis() {
 	})
 
 	_, err := client.Ping().Result()
-	if err == nil{
+	if err == nil {
 		fmt.Println("test redis", redisAddr, "ok")
-	}else {
+	} else {
 		fmt.Println("test redis", redisAddr, "failed, err:", err)
 	}
 
@@ -122,7 +117,7 @@ func testRedis() {
 
 func testRedisString() {
 	rc := &db.RedisClient{}
-	if !rc.Info.ParseFromString("192.168.121.2:6379 asdf 1"){
+	if !rc.Info.ParseFromString("192.168.121.2:6379 asdf 1") {
 		panic("testRedisString failed")
 	}
 
@@ -135,9 +130,9 @@ func testRedisString() {
 	//})
 
 	err := rc.Init(true)
-	if err == nil{
+	if err == nil {
 		fmt.Println("test redis", redisAddr, "ok")
-	}else {
+	} else {
 		fmt.Println("test redis", redisAddr, "failed, err:", err)
 	}
 

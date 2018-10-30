@@ -1,4 +1,3 @@
-//  gowinder@hotmail.com 2017/7/6 10:30
 package db
 
 // reserveBuffer checks cap(buf) and expand buffer to len(buf) + appendSize.
@@ -13,7 +12,6 @@ func reserveBuffer(buf []byte, appendSize int) []byte {
 	}
 	return buf[:newSize]
 }
-
 
 // escapeStringQuotes is similar to escapeBytesQuotes but for string.
 func EscapeStringQuotes(buf []byte, v string) []byte {
@@ -34,7 +32,6 @@ func EscapeStringQuotes(buf []byte, v string) []byte {
 
 	return buf[:pos]
 }
-
 
 // escapeStringBackslash is similar to escapeBytesBackslash but for string.
 func EscapeStringBackslash(buf []byte, v string) []byte {

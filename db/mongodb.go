@@ -97,6 +97,8 @@ func (self *MongoDbClientPool) GetClient() *MongoDbClient {
 
 	self.intUse += 1
 
+	fmt.Println("MongoDbClientPool.GetClient in use ", self.intUse)
+
 	return client
 }
 
@@ -107,4 +109,6 @@ func (self *MongoDbClientPool) ReturnClient(mongoDbClient *MongoDbClient) {
 	self.pool = append(self.pool, mongoDbClient)
 
 	self.intUse -= 1
+
+	fmt.Println("MongoDbClientPool.ReturnClient in use ", self.intUse)
 }

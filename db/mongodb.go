@@ -112,3 +112,10 @@ func (self *MongoDbClientPool) ReturnClient(mongoDbClient *MongoDbClient) {
 
 	fmt.Println("MongoDbClientPool.ReturnClient in use ", self.intUse)
 }
+
+func (self *MongoDbClientPool) GetCanUseCount() {
+	self.Lock()
+	defer self.Unlock()
+
+	return len(self.pool)
+}

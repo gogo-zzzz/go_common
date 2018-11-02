@@ -38,7 +38,7 @@ func (self *MongoDbClient) InitByString(con string, ping bool) error {
 
 func (self *MongoDbClient) Close() {
 	self.Client.Close()
-	fmt.Println("MysqlClient closed")
+	fmt.Println("MongoDb client closed")
 }
 
 type MongoDbClientPool struct {

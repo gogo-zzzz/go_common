@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 
 	"github.com/go-redis/redis"
@@ -20,11 +21,17 @@ type RedisInfo struct {
 */
 func (self *RedisInfo) ParseFromString(str string) bool {
 	n, err := fmt.Sscanf(str, "%s %s %d", &self.Addr, &self.Pwd, &self.Db)
-	if err != nil {
+	if n < 2 && err != nil {
 		log.Printf("ParseFromString %s error %v", str, err)
 		return false
 	}
+
 	if n != 3 {
+		if n == 2 {
+			self.Db, _ = strconv.Atoi(self.Pwd)
+			self.Pwd = ""
+			return true
+		}
 		log.Printf("ParseFromString %s read not match", str)
 		return false
 	}

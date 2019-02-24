@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"go_common/db"
+
+	"github.com/gogo-zzzz/go_common/db"
 
 	"github.com/go-redis/redis"
 )
@@ -17,7 +18,7 @@ var mysqlPwd string = "asdf"
 var mysqlPort int = 3306
 var mysqlDb string = "test"
 
-const VERSION string = "0.4.1"
+const VERSION string = "0.4.2"
 
 func main() {
 	fmt.Println("start svpn cache gate  version ", VERSION)

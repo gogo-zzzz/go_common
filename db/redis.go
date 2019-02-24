@@ -6,21 +6,27 @@ import (
 	"log"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/kataras/golog"
 )
 
+/*
+RedisInfo redis server info
+*/
 type RedisInfo struct {
 	Addr string
 	Pwd  string
 	Db   int
 }
 
-/**
+/*
+ParseFromString parse redis server from string
 @param str="ip:port password dbindex"
 */
-func (self *RedisInfo) ParseFromString(str string) bool {
-	n, err := fmt.Sscanf(str, "%s %s %d", &self.Addr, &self.Pwd, &self.Db)
+func (info *RedisInfo) ParseFromString(str string) bool {
+	n, err := fmt.Sscanf(str, "%s %s %d", &info.Addr, &info.Pwd, &info.Db)
 	if n < 2 && err != nil {
 		log.Printf("ParseFromString %s error %v", str, err)
 		return false
@@ -28,8 +34,8 @@ func (self *RedisInfo) ParseFromString(str string) bool {
 
 	if n != 3 {
 		if n == 2 {
-			self.Db, _ = strconv.Atoi(self.Pwd)
-			self.Pwd = ""
+			info.Db, _ = strconv.Atoi(info.Pwd)
+			info.Pwd = ""
 			return true
 		}
 		log.Printf("ParseFromString %s read not match", str)
@@ -39,6 +45,9 @@ func (self *RedisInfo) ParseFromString(str string) bool {
 	return true
 }
 
+/*
+RedisClient redis client
+*/
 type RedisClient struct {
 	Client *redis.Client
 	Info   RedisInfo
@@ -46,19 +55,22 @@ type RedisClient struct {
 	Pool *RedisClientPool
 }
 
-func (self *RedisClient) Init(ping bool) error {
-	self.Client = redis.NewClient(&redis.Options{
-		Addr:     self.Info.Addr,
-		Password: self.Info.Pwd, // no password set
-		DB:       self.Info.Db,  // use default DB
+/*
+Init init a redis client object
+*/
+func (client *RedisClient) Init(ping bool) error {
+	client.Client = redis.NewClient(&redis.Options{
+		Addr:     client.Info.Addr,
+		Password: client.Info.Pwd, // no password set
+		DB:       client.Info.Db,  // use default DB
 	})
 
 	if ping {
-		_, err := self.Client.Ping().Result()
+		_, err := client.Client.Ping().Result()
 		if err == nil {
-			fmt.Println("RedisClient.Init ping", self.Info.Addr, "ok")
+			fmt.Println("RedisClient.Init ping", client.Info.Addr, "ok")
 		} else {
-			fmt.Println("RedisClient.Init ping", self.Info.Addr, "failed, err:", err)
+			fmt.Println("RedisClient.Init ping", client.Info.Addr, "failed, err:", err)
 			return err
 		}
 	}
@@ -66,40 +78,97 @@ func (self *RedisClient) Init(ping bool) error {
 	return nil
 }
 
-func (self *RedisClient) Close() {
-	self.Client.Close()
+/*
+Close close a redis client session
+*/
+func (client *RedisClient) Close() {
+	client.Client.Close()
 	fmt.Println("RedisClient closed")
 }
 
-func (self *RedisClient) ReturnToPool() {
-	if self.Pool != nil {
-		self.Pool.ReturnClient(self)
+/*
+ReturnToPool return redis client to pool
+*/
+func (client *RedisClient) ReturnToPool() {
+	if client.Pool != nil {
+		client.Pool.ReturnClient(client)
 	}
 }
 
-func (self *RedisClient) MultiGet(keys []string) *redis.SliceCmd {
+/*
+MultiGet multiply get
+*/
+func (client *RedisClient) MultiGet(keys []string) *redis.SliceCmd {
 	args := make([]interface{}, 1+len(keys))
 	args[0] = "mget"
 	for i, key := range keys {
 		args[1+i] = key
 	}
 	cmd := redis.NewSliceCmd(args...)
-	self.Client.Process(cmd)
+	client.Client.Process(cmd)
 	return cmd
 }
 
-func (self *RedisClient) MultiDel(keys []string) *redis.IntCmd {
-	self.Client.Del()
+/*
+MultiDel  multiply delete
+*/
+func (client *RedisClient) MultiDel(keys []string) *redis.IntCmd {
+	client.Client.Del()
 	args := make([]interface{}, 1+len(keys))
 	args[0] = "del"
 	for i, key := range keys {
 		args[1+i] = key
 	}
 	cmd := redis.NewIntCmd(args...)
-	self.Client.Process(cmd)
+	client.Client.Process(cmd)
 	return cmd
 }
 
+/*
+Get get key value
+*/
+func (client *RedisClient) Get(key string, logName string) (ret bool, result string) {
+	ret = false
+	cmd := client.Client.Get(key)
+	if cmd != nil {
+		golog.Error(logName, "get key", key, " return nil")
+		return
+	}
+
+	result, err := cmd.Result()
+	if err != nil {
+		golog.Error(logName, "get key", key, " error", cmd.Err())
+		return
+	}
+
+	ret = true
+	return
+}
+
+/*
+Set set key value
+*/
+func (client *RedisClient) Set(key string, value interface{}, expiration time.Duration, logName string) (ret bool) {
+	ret = false
+	cmd := client.Client.Set(key, value, expiration)
+	if cmd != nil {
+		golog.Error(logName, "get key", key, " return nil")
+		return
+	}
+
+	_, err := cmd.Result()
+	if err != nil {
+		golog.Error(logName, "get key", key, " error", cmd.Err())
+		return
+	}
+
+	ret = true
+	return
+}
+
+/*
+RedisClientPool redis client pool
+*/
 type RedisClientPool struct {
 	sync.Mutex
 	pool []*RedisClient
@@ -107,18 +176,24 @@ type RedisClientPool struct {
 	intUse int
 }
 
+/*
+GlobalRedisClientPool global redis client pool
+*/
 var GlobalRedisClientPool RedisClientPool
 
-func (self *RedisClientPool) Init(addr string, pwd string, db int, cap int, pingTest bool, breadIfError bool) error {
-	self.Lock()
-	defer self.Unlock()
-	self.pool = make([]*RedisClient, cap)
+/*
+Init initialize a pool
+*/
+func (pool *RedisClientPool) Init(addr string, pwd string, db int, cap int, pingTest bool, breadIfError bool) error {
+	pool.Lock()
+	defer pool.Unlock()
+	pool.pool = make([]*RedisClient, cap)
 	fmt.Println("RedisClientPool.Init begin, capacity is", cap)
 
 	for i := 0; i < cap; i++ {
-		self.pool[i] = &RedisClient{Info: RedisInfo{Addr: addr, Pwd: pwd, Db: db}}
-		redisClient := self.pool[i]
-		redisClient.Pool = self
+		pool.pool[i] = &RedisClient{Info: RedisInfo{Addr: addr, Pwd: pwd, Db: db}}
+		redisClient := pool.pool[i]
+		redisClient.Pool = pool
 
 		err := redisClient.Init(pingTest)
 		if err != nil && breadIfError {
@@ -129,22 +204,23 @@ func (self *RedisClientPool) Init(addr string, pwd string, db int, cap int, ping
 	return nil
 }
 
-/**
+/*
+InitFromString init pool from string
 @param str="ip:port password dbindex"
 */
-func (self *RedisClientPool) InitFromString(str string, cap int, pingTest bool, breadIfError bool) error {
-	self.Lock()
-	defer self.Unlock()
-	self.pool = make([]*RedisClient, cap)
+func (pool *RedisClientPool) InitFromString(str string, cap int, pingTest bool, breadIfError bool) error {
+	pool.Lock()
+	defer pool.Unlock()
+	pool.pool = make([]*RedisClient, cap)
 	fmt.Println("RedisClientPool.Init begin, capacity is", cap)
 
 	for i := 0; i < cap; i++ {
-		self.pool[i] = &RedisClient{Info: RedisInfo{}}
-		if !self.pool[i].Info.ParseFromString(str) {
+		pool.pool[i] = &RedisClient{Info: RedisInfo{}}
+		if !pool.pool[i].Info.ParseFromString(str) {
 			return errors.New("RedisClientPool.InitFromString failed")
 		}
-		redisClient := self.pool[i]
-		redisClient.Pool = self
+		redisClient := pool.pool[i]
+		redisClient.Pool = pool
 
 		err := redisClient.Init(pingTest)
 		if err != nil && breadIfError {
@@ -155,31 +231,73 @@ func (self *RedisClientPool) InitFromString(str string, cap int, pingTest bool, 
 	return nil
 }
 
-func (self *RedisClientPool) GetClient() *RedisClient {
-	self.Lock()
-	defer self.Unlock()
+/*
+GetClient get one client from pool
+*/
+func (pool *RedisClientPool) GetClient() *RedisClient {
+	pool.Lock()
+	defer pool.Unlock()
 
-	if len(self.pool) < 1 {
+	if len(pool.pool) < 1 {
 		fmt.Println("RedisClientPool.GetClient no free client")
 		return nil
 	}
 
-	index := len(self.pool) - 1
-	client := self.pool[index]
-	self.pool = self.pool[:index]
+	index := len(pool.pool) - 1
+	client := pool.pool[index]
+	pool.pool = pool.pool[:index]
 
-	//self.poolInUse = append(self.poolInUse, client)
+	//pool.poolInUse = append(pool.poolInUse, client)
 
-	self.intUse += 1
+	pool.intUse++
 
 	return client
 }
 
-func (self *RedisClientPool) ReturnClient(redisClient *RedisClient) {
-	self.Lock()
-	defer self.Unlock()
+/*
+ReturnClient return client to pool
+*/
+func (pool *RedisClientPool) ReturnClient(redisClient *RedisClient) {
+	pool.Lock()
+	defer pool.Unlock()
 
-	self.pool = append(self.pool, redisClient)
+	pool.pool = append(pool.pool, redisClient)
 
-	self.intUse -= 1
+	pool.intUse--
+}
+
+/*
+RedisGet at first get one avariable redis client from pool,
+	then get key value from redis
+*/
+func (pool *RedisClientPool) RedisGet(key string, logName string) (ret bool, result string) {
+	ret = false
+	result = ""
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("loadDefault connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	ret, result = redisClient.Get(key, logName)
+
+	return
+}
+
+/*
+RedisSet at first get one avariable redis client from pool,
+	then set key value to redis
+*/
+func (pool *RedisClientPool) RedisSet(key string, value interface{}, expiration time.Duration, logName string) (ret bool, result string) {
+	ret = false
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("loadDefault connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	ret = redisClient.Set(key, value, expiration, logName)
+	return
 }

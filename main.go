@@ -17,7 +17,7 @@ var mysqlPwd string = "asdf"
 var mysqlPort int = 3306
 var mysqlDb string = "test"
 
-const VERSION string = "0.3.1"
+const VERSION string = "0.4.1"
 
 func main() {
 	fmt.Println("start svpn cache gate  version ", VERSION)

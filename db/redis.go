@@ -130,7 +130,7 @@ Get get key value
 func (client *RedisClient) Get(key string, logName string) (ret bool, result string) {
 	ret = false
 	cmd := client.Client.Get(key)
-	if cmd != nil {
+	if cmd == nil {
 		golog.Error(logName, "get key", key, " return nil")
 		return
 	}
@@ -151,14 +151,14 @@ Set set key value
 func (client *RedisClient) Set(key string, value interface{}, expiration time.Duration, logName string) (ret bool) {
 	ret = false
 	cmd := client.Client.Set(key, value, expiration)
-	if cmd != nil {
-		golog.Error(logName, "get key", key, " return nil")
+	if cmd == nil {
+		golog.Error(logName, "RedisClient.Set: key", key, " return nil")
 		return
 	}
 
 	_, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, "get key", key, " error", cmd.Err())
+		golog.Error(logName, "RedisClient.Set: key", key, " error", cmd.Err())
 		return
 	}
 
@@ -184,7 +184,7 @@ var GlobalRedisClientPool RedisClientPool
 /*
 Init initialize a pool
 */
-func (pool *RedisClientPool) Init(addr string, pwd string, db int, cap int, pingTest bool, breadIfError bool) error {
+func (pool *RedisClientPool) Init(addr string, pwd string, db int, cap int, pingTest bool, breakIfError bool) error {
 	pool.Lock()
 	defer pool.Unlock()
 	pool.pool = make([]*RedisClient, cap)
@@ -196,7 +196,7 @@ func (pool *RedisClientPool) Init(addr string, pwd string, db int, cap int, ping
 		redisClient.Pool = pool
 
 		err := redisClient.Init(pingTest)
-		if err != nil && breadIfError {
+		if err != nil && breakIfError {
 			return err
 		}
 	}
@@ -289,7 +289,7 @@ func (pool *RedisClientPool) RedisGet(key string, logName string) (ret bool, res
 RedisSet at first get one avariable redis client from pool,
 	then set key value to redis
 */
-func (pool *RedisClientPool) RedisSet(key string, value interface{}, expiration time.Duration, logName string) (ret bool, result string) {
+func (pool *RedisClientPool) RedisSet(key string, value string, expiration time.Duration, logName string) (ret bool) {
 	ret = false
 	redisClient := pool.GetClient()
 	if redisClient == nil {

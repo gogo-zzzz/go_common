@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/kataras/golog"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -55,6 +57,21 @@ var _ = Describe("pool", func() {
 		})
 	})
 
+	Context("mulit-del", func() {
+		keys := []string{"test_multi_del.a", "test_multi_del.b", "test_multi_del.c", "test_multi_del.d"}
+		It("should set ok", func() {
+			for _, key := range keys {
+				ret := pool.RedisSet(key, testValueString, 0, key)
+				Expect(ret).To(Equal(true))
+			}
+		})
+
+		It("should del ok", func() {
+			ret := pool.RedisMultiDel(keys, "test_multi_del")
+			Expect(ret).To(Equal(true))
+		})
+	})
+
 	It("should expired", func() {
 		ret := pool.RedisSet(testKey, testValueString, expiration, "test_expire")
 		Expect(ret).To(Equal(true))
@@ -62,5 +79,27 @@ var _ = Describe("pool", func() {
 		time.Sleep(expiration + time.Second)
 		ret, _ = pool.RedisGet(testKey, "test_expire")
 		Expect(ret).To(Equal(false))
+	})
+
+	Context("get keys test", func() {
+		keys := []string{"test.a.b.c", "test.a.b.c.d", "test.a.b.c.d.e", "test.a.b.2.e"}
+		BeforeEach(func() {
+			for _, key := range keys {
+				pool.RedisSet(key, "xx", 0, " redis_keys_test ")
+			}
+		})
+
+		AfterEach(func() {
+			pool.RedisMultiDel(keys, " redis_keys_test ")
+		})
+
+		It("should get all keys", func() {
+			ret, result := pool.RedisKeys("test.a.b.c*", "get_keys_test")
+			Expect(ret).To(Equal(true))
+			if len(result) != 3 {
+				golog.Info(result)
+			}
+			Expect(len(result)).To(Equal(3))
+		})
 	})
 })

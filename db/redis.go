@@ -167,6 +167,27 @@ func (client *RedisClient) Set(key string, value interface{}, expiration time.Du
 }
 
 /*
+Keys get keys by pattern
+*/
+func (client *RedisClient) Keys(keyPattern string, logName string) (ret bool, result []string) {
+	ret = false
+	cmd := client.Client.Keys(keyPattern)
+	if cmd == nil {
+		golog.Error(logName, "RedisClient.Keys: keyPattern", keyPattern, " return nil")
+		return
+	}
+
+	result, err := cmd.Result()
+	if err != nil {
+		golog.Error(logName, "RedisClient.Keys: keyPattern", keyPattern, " error", cmd.Err())
+		return
+	}
+
+	ret = true
+	return
+}
+
+/*
 RedisClientPool redis client pool
 */
 type RedisClientPool struct {
@@ -275,7 +296,7 @@ func (pool *RedisClientPool) RedisGet(key string, logName string) (ret bool, res
 	result = ""
 	redisClient := pool.GetClient()
 	if redisClient == nil {
-		golog.Error("loadDefault connect redis failed")
+		golog.Error("RedisGet connect redis failed")
 		return
 	}
 	defer redisClient.ReturnToPool()
@@ -293,11 +314,50 @@ func (pool *RedisClientPool) RedisSet(key string, value string, expiration time.
 	ret = false
 	redisClient := pool.GetClient()
 	if redisClient == nil {
-		golog.Error("loadDefault connect redis failed")
+		golog.Error("RedisSet connect redis failed")
 		return
 	}
 	defer redisClient.ReturnToPool()
 
 	ret = redisClient.Set(key, value, expiration, logName)
+	return
+}
+
+/*
+RedisKeys return redis key by pattern
+*/
+func (pool *RedisClientPool) RedisKeys(keyPattern string, logName string) (ret bool, result []string) {
+	ret = false
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("RedisKeys connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	ret, result = redisClient.Keys(keyPattern, logName)
+
+	return
+}
+
+/*
+RedisDel delete keys
+*/
+func (pool *RedisClientPool) RedisMultiDel(keys []string, logName string) (ret bool) {
+	ret = false
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("RedisKeys connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	if redisClient.MultiDel(keys).Err() != nil {
+		golog.Error("RedisClientPool.RedisMultiDel(", logName, ") err:", redisClient.MultiDel(keys).Err())
+		ret = false
+	} else {
+		ret = true
+	}
+
 	return
 }

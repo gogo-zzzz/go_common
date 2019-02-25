@@ -361,3 +361,27 @@ func (pool *RedisClientPool) RedisMultiDel(keys []string, logName string) (ret b
 
 	return
 }
+
+/*
+RedisMultiGet multi-get redis key
+*/
+func (pool *RedisClientPool) RedisMultiGet(keys []string, logName string) (ret bool, result []interface{}) {
+	ret = false
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("RediRedisMultiGetsKeys connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	cmd := redisClient.MultiGet(keys)
+	if cmd.Err() != nil {
+		golog.Error("RedisClientPool.RedisMultiGet(", logName, ") err:", cmd.Err())
+		ret = false
+	} else {
+		result, _ = cmd.Result()
+		ret = true
+	}
+
+	return
+}

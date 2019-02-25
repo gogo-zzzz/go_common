@@ -72,6 +72,29 @@ var _ = Describe("pool", func() {
 		})
 	})
 
+	Context("mulit-get", func() {
+		keys := []string{"test.a.b.c", "test.a.b.c.d", "test.a.b.c.d.e", "test.a.b.2.e"}
+		values := []string{"asbc", "1234", "bck234kj", "124123kj"}
+		BeforeEach(func() {
+			for i, key := range keys {
+				pool.RedisSet(key, values[i], 0, " redis_keys_test ")
+			}
+		})
+
+		AfterEach(func() {
+			pool.RedisMultiDel(keys, "mulit-get-after-each")
+		})
+
+		It("should multiget ok", func() {
+			ret, result := pool.RedisMultiGet(keys, " multiget test")
+			Expect(ret).To(Equal(true))
+			for i, _ := range result {
+				Expect(result[i]).To(Equal(values[i]))
+			}
+		})
+
+	})
+
 	It("should expired", func() {
 		ret := pool.RedisSet(testKey, testValueString, expiration, "test_expire")
 		Expect(ret).To(Equal(true))

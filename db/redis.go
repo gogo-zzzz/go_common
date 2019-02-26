@@ -188,6 +188,28 @@ func (client *RedisClient) Keys(keyPattern string, logName string) (ret bool, re
 }
 
 /*
+Exists key exist
+*/
+func (client *RedisClient) Exists(key string, logName string) bool {
+	cmd := client.Client.Exists(key)
+	if cmd == nil {
+		golog.Error(logName, " get key", key, " return nil")
+		return false
+	}
+
+	result, err := cmd.Result()
+	if err != nil {
+		golog.Error(logName, " get key", key, " error", cmd.Err())
+		return false
+	}
+
+	if result == 1 {
+		return true
+	}
+	return false
+}
+
+/*
 RedisClientPool redis client pool
 */
 type RedisClientPool struct {
@@ -384,4 +406,18 @@ func (pool *RedisClientPool) RedisMultiGet(keys []string, logName string) (ret b
 	}
 
 	return
+}
+
+/*
+RedisExists check key exists
+*/
+func (pool *RedisClientPool) RedisExists(key string, logName string) (ret bool) {
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error(" RedisExists connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	return redisClient.Exists(key, logName)
 }

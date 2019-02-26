@@ -131,13 +131,13 @@ func (client *RedisClient) Get(key string, logName string) (ret bool, result str
 	ret = false
 	cmd := client.Client.Get(key)
 	if cmd == nil {
-		golog.Error(logName, "get key", key, " return nil")
+		golog.Error(logName, " get key", key, " return nil")
 		return
 	}
 
 	result, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, "get key", key, " error", cmd.Err())
+		golog.Error(logName, " get key", key, " error", cmd.Err())
 		return
 	}
 
@@ -152,13 +152,13 @@ func (client *RedisClient) Set(key string, value interface{}, expiration time.Du
 	ret = false
 	cmd := client.Client.Set(key, value, expiration)
 	if cmd == nil {
-		golog.Error(logName, "RedisClient.Set: key", key, " return nil")
+		golog.Error(logName, " RedisClient.Set: key", key, " return nil")
 		return
 	}
 
 	_, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, "RedisClient.Set: key", key, " error", cmd.Err())
+		golog.Error(logName, " RedisClient.Set: key", key, " error", cmd.Err())
 		return
 	}
 
@@ -173,13 +173,13 @@ func (client *RedisClient) Keys(keyPattern string, logName string) (ret bool, re
 	ret = false
 	cmd := client.Client.Keys(keyPattern)
 	if cmd == nil {
-		golog.Error(logName, "RedisClient.Keys: keyPattern", keyPattern, " return nil")
+		golog.Error(logName, " RedisClient.Keys: keyPattern", keyPattern, " return nil")
 		return
 	}
 
 	result, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, "RedisClient.Keys: keyPattern", keyPattern, " error", cmd.Err())
+		golog.Error(logName, " RedisClient.Keys: keyPattern", keyPattern, " error", cmd.Err())
 		return
 	}
 
@@ -296,7 +296,7 @@ func (pool *RedisClientPool) RedisGet(key string, logName string) (ret bool, res
 	result = ""
 	redisClient := pool.GetClient()
 	if redisClient == nil {
-		golog.Error("RedisGet connect redis failed")
+		golog.Error(" RedisGet connect redis failed")
 		return
 	}
 	defer redisClient.ReturnToPool()
@@ -314,7 +314,7 @@ func (pool *RedisClientPool) RedisSet(key string, value string, expiration time.
 	ret = false
 	redisClient := pool.GetClient()
 	if redisClient == nil {
-		golog.Error("RedisSet connect redis failed")
+		golog.Error(" RedisSet connect redis failed")
 		return
 	}
 	defer redisClient.ReturnToPool()
@@ -330,7 +330,7 @@ func (pool *RedisClientPool) RedisKeys(keyPattern string, logName string) (ret b
 	ret = false
 	redisClient := pool.GetClient()
 	if redisClient == nil {
-		golog.Error("RedisKeys connect redis failed")
+		golog.Error(" RedisKeys connect redis failed")
 		return
 	}
 	defer redisClient.ReturnToPool()

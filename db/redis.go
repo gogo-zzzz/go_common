@@ -131,13 +131,13 @@ func (client *RedisClient) Get(key string, logName string) (ret bool, result str
 	ret = false
 	cmd := client.Client.Get(key)
 	if cmd == nil {
-		golog.Error(logName, " get key", key, " return nil")
+		golog.Error(logName, " get key ", key, " return nil")
 		return
 	}
 
 	result, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, " get key", key, " error", cmd.Err())
+		golog.Error(logName, " get key ", key, " error", cmd.Err())
 		return
 	}
 
@@ -152,13 +152,13 @@ func (client *RedisClient) Set(key string, value interface{}, expiration time.Du
 	ret = false
 	cmd := client.Client.Set(key, value, expiration)
 	if cmd == nil {
-		golog.Error(logName, " RedisClient.Set: key", key, " return nil")
+		golog.Error(logName, " RedisClient.Set: key ", key, " return nil")
 		return
 	}
 
 	_, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, " RedisClient.Set: key", key, " error", cmd.Err())
+		golog.Error(logName, " RedisClient.Set: key ", key, " error", cmd.Err())
 		return
 	}
 
@@ -173,13 +173,13 @@ func (client *RedisClient) Keys(keyPattern string, logName string) (ret bool, re
 	ret = false
 	cmd := client.Client.Keys(keyPattern)
 	if cmd == nil {
-		golog.Error(logName, " RedisClient.Keys: keyPattern", keyPattern, " return nil")
+		golog.Error(logName, " RedisClient.Keys: keyPattern ", keyPattern, " return nil")
 		return
 	}
 
 	result, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, " RedisClient.Keys: keyPattern", keyPattern, " error", cmd.Err())
+		golog.Error(logName, " RedisClient.Keys: keyPattern ", keyPattern, " error", cmd.Err())
 		return
 	}
 
@@ -193,13 +193,13 @@ Exists key exist
 func (client *RedisClient) Exists(key string, logName string) bool {
 	cmd := client.Client.Exists(key)
 	if cmd == nil {
-		golog.Error(logName, " get key", key, " return nil")
+		golog.Error(logName, " get key ", key, " return nil")
 		return false
 	}
 
 	result, err := cmd.Result()
 	if err != nil {
-		golog.Error(logName, " get key", key, " error", cmd.Err())
+		golog.Error(logName, " get key ", key, " error", cmd.Err())
 		return false
 	}
 
@@ -255,7 +255,7 @@ func (pool *RedisClientPool) InitFromString(str string, cap int, pingTest bool, 
 	pool.Lock()
 	defer pool.Unlock()
 	pool.pool = make([]*RedisClient, cap)
-	fmt.Println("RedisClientPool.Init begin, capacity is", cap)
+	fmt.Println("RedisClientPool.Init begin, capacity is ", cap)
 
 	for i := 0; i < cap; i++ {
 		pool.pool[i] = &RedisClient{Info: RedisInfo{}}

@@ -125,4 +125,13 @@ var _ = Describe("pool", func() {
 			Expect(len(result)).To(Equal(3))
 		})
 	})
+
+	It("should incr", func() {
+		test_incr := "test_incr"
+		ok, val := pool.RedisIncr(test_incr, "incr_test")
+		Expect(ok).Should(BeTrue())
+		ok, val2 := pool.RedisIncr(test_incr, "incr_test")
+		Expect(ok).Should(BeTrue())
+		Expect(val + 1).Should(Equal(val2))
+	})
 })

@@ -210,6 +210,27 @@ func (client *RedisClient) Exists(key string, logName string) bool {
 }
 
 /*
+Keys get keys by pattern
+*/
+func (client *RedisClient) Incr(key string, logName string) (ret bool, val int64) {
+	ret = false
+	cmd := client.Client.Incr(key)
+	if cmd == nil {
+		golog.Error(logName, " RedisClient.Incr: key ", key, " return nil")
+		return
+	}
+
+	val, err := cmd.Result()
+	if err != nil {
+		golog.Error(logName, " RedisClient.Incr: key ", key, " error", cmd.Err())
+		return
+	}
+
+	ret = true
+	return
+}
+
+/*
 RedisClientPool redis client pool
 */
 type RedisClientPool struct {
@@ -420,4 +441,19 @@ func (pool *RedisClientPool) RedisExists(key string, logName string) (ret bool) 
 	defer redisClient.ReturnToPool()
 
 	return redisClient.Exists(key, logName)
+}
+
+/*
+RedisIncr increment key
+*/
+func (pool *RedisClientPool) RedisIncr(key string, logName string) (ret bool, val int64) {
+	ret = false
+	redisClient := pool.GetClient()
+	if redisClient == nil {
+		golog.Error("RedisClientPool.RedisIncr connect redis failed")
+		return
+	}
+	defer redisClient.ReturnToPool()
+
+	return redisClient.Incr(key, logName)
 }
